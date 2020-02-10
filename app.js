@@ -2,10 +2,12 @@ const express = require('express')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const path = require('path')
-const feedRoutes = require('./routes/feed')
-const authRoutes = require('./routes/auth')
 const multer = require('multer')
 const uuidv4 = require('uuid/v4')
+const graphqlHttp = require('express-graphql')
+
+const graphqlSchema = require('./graphql/schema')
+const graphqlResolver = require('./graphql/resolvers')
 
 const app = express()
 
@@ -43,8 +45,14 @@ app.use((req, res, next) => {
   next()
 })
 
-app.use('/feed', feedRoutes)
-app.use('/auth', authRoutes)
+app.use(
+  '/graphql',
+  graphqlHttp({
+    schema: graphqlSchema,
+    resolver: graphqlResolver,
+    graphiql: true,
+  })
+)
 
 app.use((error, req, res, next) => {
   console.log(error)
@@ -60,10 +68,6 @@ mongoose
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
   .then(res => {
-    const server = app.listen(8080)
-    const io = require('./socket').init(server)
-    io.on('connection', socket => {
-      console.log('Client connected')
-    })
+    app.listen(8080)
   })
   .catch(err => console.log(err))
