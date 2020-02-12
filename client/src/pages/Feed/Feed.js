@@ -132,26 +132,43 @@ class Feed extends Component {
     formData.append('title', postData.title)
     formData.append('content', postData.content)
     formData.append('image', postData.image)
-    let url = 'http://localhost:8080/feed/post'
-    let method = 'POST'
-    if (this.state.editPost) {
-      url = 'http://localhost:8080/feed/post/' + this.state.editPost._id
-      method = 'PUT'
+    let graphqlQuery = {
+      query: `
+        mutation {
+          createPost(postInput: {title: "${postData.title}", content: "${postData.content}", imageUrl: "https://vignette.wikia.nocookie.net/bukinysv/images/e/e6/%D0%93%D0%B5%D0%BD%D0%B0_%D0%91%D1%83%D0%BA%D0%B8%D0%BD.jpg/revision/latest/scale-to-width-down/340?cb=20160626185743&path-prefix=ru"}) {
+            _id
+            title
+            content
+            imageUrl
+            creator {
+              name
+            }
+            createdAt
+          }
+        }
+      `,
     }
-    fetch(url, {
-      method: method,
-      body: formData,
+    fetch('http://localhost:8080/graphql', {
+      method: 'POST',
+      body: JSON.stringify(graphqlQuery),
       headers: {
         Authorization: 'Bearer ' + this.props.token,
+        'Content-Type': 'application/json',
       },
     })
       .then(res => {
-        if (res.status !== 200 && res.status !== 201) {
-          throw new Error('Creating or editing a post failed!')
-        }
         return res.json()
       })
       .then(resData => {
+        if (resData.errors && resData.errors[0].status === 422) {
+          throw new Error(
+            "Validation failed. Make sure the email address isn't used yet!"
+          )
+        }
+        if (resData.errors) {
+          throw new Error('User login failed')
+        }
+        console.log(resData)
         this.setState(prevState => {
           return {
             isEditing: false,
