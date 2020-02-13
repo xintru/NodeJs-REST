@@ -5,6 +5,7 @@ const path = require('path')
 const multer = require('multer')
 const uuidv4 = require('uuid/v4')
 const graphqlHttp = require('express-graphql')
+const fs = require('fs')
 
 const graphqlSchema = require('./graphql/schema')
 const graphqlResolver = require('./graphql/resolvers')
@@ -51,6 +52,22 @@ app.use((req, res, next) => {
 
 app.use(auth)
 
+app.put('/post-image', (req, res, next) => {
+  if (!req.file) {
+    return res.status(200).json({ message: 'No file provided' })
+  }
+  if (req.body.oldPath) {
+    clearImage(req.body.oldPath)
+  }
+  if (!req.isAuth) {
+    const error = new Error('Not authorized')
+    throw error
+  }
+  return res
+    .status(201)
+    .json({ message: 'File stored', filePath: req.file.path })
+})
+
 app.use(
   '/graphql',
   graphqlHttp({
@@ -90,3 +107,8 @@ mongoose
     app.listen(8080)
   })
   .catch(err => console.log(err))
+
+const clearImage = filePath => {
+  filePath = path.join(__dirname, '..', filePath)
+  fs.unlink(filePath, err => console.log(err))
+}
