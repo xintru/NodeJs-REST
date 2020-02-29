@@ -7,6 +7,8 @@ const authRoutes = require('./routes/auth')
 const multer = require('multer')
 const uuidv4 = require('uuid/v4')
 
+const { mongoDbKey } = require('./secrets/secrets')
+
 const app = express()
 
 const fileStorage = multer.diskStorage({
@@ -55,10 +57,7 @@ app.use((error, req, res, next) => {
 })
 
 mongoose
-  .connect(
-    'mongodb+srv://xintru:2p3c2635q@cluster0-rx2ra.mongodb.net/messages?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true',
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
+  .connect(mongoDbKey, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(res => {
     const server = app.listen(8080)
     const io = require('./socket').init(server)
